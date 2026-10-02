@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy Quest EduGame</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;800&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 99%, #FECFEF 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        h1, h2, h3, .candy-font {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 4px solid white;
+            box-shadow: 0 10px 25px rgba(255, 105, 180, 0.2), inset 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-candy {
+            background: linear-gradient(to bottom, #FF6B6B, #FF4757);
+            border: 3px solid white;
+            border-radius: 999px;
+            color: white;
+            font-family: 'Fredoka One', cursive;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 0 #C0392B, 0 10px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-candy::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5%;
+            width: 90%;
+            height: 30%;
+            background: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0));
+            border-radius: 999px;
+        }
+
+        .btn-candy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 #C0392B, 0 12px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-candy:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #C0392B, 0 4px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn-blue { background: linear-gradient(to bottom, #4facfe, #00f2fe); box-shadow: 0 6px 0 #008CBA, 0 10px 15px rgba(0,0,0,0.1); }
+        .btn-blue:hover { box-shadow: 0 8px 0 #008CBA, 0 12px 20px rgba(0,0,0,0.15); }
+        .btn-blue:active { box-shadow: 0 2px 0 #008CBA, 0 4px 5px rgba(0,0,0,0.1); }
+
+        .btn-green { background: linear-gradient(to bottom, #43e97b, #38f9d7); box-shadow: 0 6px 0 #2E8B57, 0 10px 15px rgba(0,0,0,0.1); }
+        .btn-green:hover { box-shadow: 0 8px 0 #2E8B57, 0 12px 20px rgba(0,0,0,0.15); }
+        .btn-green:active { box-shadow: 0 2px 0 #2E8B57, 0 4px 5px rgba(0,0,0,0.1); }
+        
+        .btn-yellow { background: linear-gradient(to bottom, #f6d365, #fda085); box-shadow: 0 6px 0 #D35400, 0 10px 15px rgba(0,0,0,0.1); }
+        .btn-yellow:hover { box-shadow: 0 8px 0 #D35400, 0 12px 20px rgba(0,0,0,0.15); }
+        .btn-yellow:active { box-shadow: 0 2px 0 #D35400, 0 4px 5px rgba(0,0,0,0.1); }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.5); }
+            70% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .animate-shake { animation: shake 0.5s; }
+
+        /* Drag & Drop Styles */
+        .draggable { cursor: grab; touch-action: none; }
+        .draggable:active { cursor: grabbing; opacity: 0.8; }
+        .dropzone { border: 3px dashed #FF9A9E; transition: all 0.3s; }
+        .dropzone.dragover { background: rgba(255, 154, 158, 0.2); border-color: #FF4757; transform: scale(1.02); }
+
+        /* Timer Pulse */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 71, 87, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+        }
+        .timer-warning { animation: pulse-red 1s infinite; color: #FF4757; }
+
+        /* Screen management */
+        .screen { display: none; }
+        .screen.active { display: block; animation: popIn 0.4s ease-out; }
+
+        /* Decorative Background candies */
+        .bg-element { position: absolute; z-index: -1; opacity: 0.5; }
+    </style>
+</head>
+<body class="flex items-center justify-center relative min-h-screen p-4">
+
+    <!-- Background Decor -->
+    <i class="fas fa-candy-cane bg-element text-pink-400 text-6xl top-10 left-10 animate-float" style="animation-delay: 0s;"></i>
+    <i class="fas fa-ice-cream bg-element text-blue-400 text-5xl bottom-20 left-20 animate-float" style="animation-delay: 1s;"></i>
+    <i class="fas fa-cookie bg-element text-yellow-500 text-7xl top-20 right-20 animate-float" style="animation-delay: 0.5s;"></i>
+    <i class="fas fa-star bg-element text-yellow-300 text-4xl bottom-10 right-32 animate-float" style="animation-delay: 1.5s;"></i>
+
+    <div id="app-container" class="w-full max-w-3xl">
+
+        <!-- ================= MAIN MENU ================= -->
+        <div id="screen-menu" class="screen active glass-panel p-8 text-center relative">
+            <h1 class="text-5xl md:text-6xl text-pink-600 mb-2 drop-shadow-md">Candy Quest</h1>
+            <p class="candy-font text-xl text-blue-500 mb-8">Belajar Jadi Menyenangkan!</p>
+
+            <div class="space-y-4 max-w-md mx-auto">
+                <div>
+                    <input type="text" id="player-name" placeholder="Siapa namamu?" class="w-full p-4 rounded-full border-4 border-pink-200 text-center candy-font text-xl focus:outline-none focus:border-pink-400 text-gray-700 placeholder-gray-400 shadow-inner">
+                </div>
+                
+                <button onclick="startGame()" class="btn-candy w-full py-4 text-2xl flex items-center justify-center gap-2">
+                    <i class="fas fa-play"></i> Mulai Main
+                </button>
+
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <button onclick="showScreen('screen-materi')" class="btn-candy btn-blue py-3 text-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-book"></i> Materi
+                    </button>
+                    <button onclick="showScreen('screen-petunjuk')" class="btn-candy btn-yellow py-3 text-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-question-circle"></i> Petunjuk
+                    </button>
+                    <button onclick="showLeaderboard()" class="btn-candy btn-green py-3 text-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-trophy"></i> Peringkat
+                    </button>
+                    <button onclick="showScreen('screen-profil')" class="glass-panel py-3 text-lg font-bold text-gray-600 flex items-center justify-center gap-2 border-2 hover:bg-white transition">
+                        <i class="fas fa-user-astronaut"></i> Profil
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MATERI PEMBELAJARAN ================= -->
+        <div id="screen-materi" class="screen glass-panel p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl text-pink-600">Buku Pintar <i class="fas fa-book-open"></i></h2>
+                <button onclick="showScreen('screen-menu')" class="text-2xl text-gray-500 hover:text-pink-500"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button onclick="showMateri('penjumlahan')" class="px-4 py-2 bg-pink-100 rounded-full candy-font text-pink-600 hover:bg-pink-200 materi-tab active-tab" id="tab-penjumlahan">Penjumlahan</button>
+                <button onclick="showMateri('pengurangan')" class="px-4 py-2 bg-gray-100 rounded-full candy-font text-gray-600 hover:bg-gray-200 materi-tab" id="tab-pengurangan">Pengurangan</button>
+            </div>
+
+            <div class="h-64 overflow-y-auto bg-white rounded-xl p-4 shadow-inner border-2 border-pink-100 text-gray-700" id="materi-content">
+                <!-- Content injected via JS -->
+            </div>
+            
+            <button onclick="showScreen('screen-menu')" class="btn-candy w-full py-3 mt-6 text-xl">Kembali</button>
+        </div>
+
+        <!-- ================= PETUNJUK ================= -->
+        <div id="screen-petunjuk" class="screen glass-panel p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl text-yellow-500">Petunjuk <i class="fas fa-info-circle"></i></h2>
+                <button onclick="showScreen('screen-menu')" class="text-2xl text-gray-500 hover:text-yellow-500"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="bg-white rounded-xl p-5 shadow-inner border-2 border-yellow-100 space-y-3 text-gray-700">
+                <p><strong><i class="fas fa-heart text-red-500"></i> Nyawa:</strong> Kamu punya 3 nyawa. Salah jawab = hilang 1.</p>
+                <p><strong><i class="fas fa-star text-yellow-500"></i> Level:</strong></p>
+                <ul class="list-disc pl-5">
+                    <li>🟢 <b>Mudah:</b> Pilihan Ganda (10 Poin, 120s)</li>
+                    <li>🟡 <b>Sedang:</b> Benar/Salah (20 Poin, 120s)</li>
+                    <li>🔴 <b>Sulit:</b> Tarik & Taruh (30 Poin, 150s)</li>
+                </ul>
+                <p><strong><i class="fas fa-bolt text-blue-500"></i> Power-Up:</strong></p>
+                <ul class="list-disc pl-5">
+                    <li><i class="fas fa-eraser"></i> <b>50/50:</b> Hapus 2 opsi salah.</li>
+                    <li><i class="fas fa-snowflake"></i> <b>Beku:</b> Hentikan waktu 10 detik.</li>
+                    <li><i class="fas fa-search"></i> <b>Clue:</b> Dapatkan petunjuk jawaban.</li>
+                </ul>
+                <p>Sisa waktu akan ditambahkan ke skormu di akhir!</p>
+            </div>
+            <button onclick="showScreen('screen-menu')" class="btn-candy btn-yellow w-full py-3 mt-6 text-xl">Paham!</button>
+        </div>
+
+        <!-- ================= PROFIL ================= -->
+        <div id="screen-profil" class="screen glass-panel p-6 md:p-8 text-center">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-3xl text-gray-700">Developer</h2>
+                <button onclick="showScreen('screen-menu')" class="text-2xl text-gray-500 hover:text-gray-800"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="py-6">
+                <div class="w-32 h-32 bg-gray-200 rounded-full mx-auto mb-4 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-5xl">
+                    👨‍💻
+                </div>
+                <h3 class="text-2xl candy-font text-blue-600">EduGame Master</h3>
+                <p class="text-gray-600 mt-2">Dibuat dengan ❤️ untuk pembelajaran yang interaktif dan menyenangkan.</p>
+            </div>
+            <button onclick="showScreen('screen-menu')" class="btn-candy btn-blue w-full py-3 text-xl">Kembali</button>
+        </div>
+
+        <!-- ================= LEVEL SELECTION ================= -->
+        <div id="screen-level" class="screen glass-panel p-6 md:p-8 text-center">
+             <h2 class="text-3xl text-pink-600 mb-2">Pilih Level</h2>
+             <p id="greet-player" class="candy-font text-xl text-gray-600 mb-6"></p>
+             
+             <div class="space-y-4">
+                 <button onclick="startLevel('mudah')" class="btn-candy btn-green w-full py-4 text-2xl flex items-center justify-between px-6">
+                     <span>🟢 Mudah</span> <span class="text-sm bg-white text-green-600 px-3 py-1 rounded-full">Pilihan Ganda</span>
+                 </button>
+                 <button onclick="startLevel('sedang')" class="btn-candy btn-yellow w-full py-4 text-2xl flex items-center justify-between px-6">
+                     <span>🟡 Sedang</span> <span class="text-sm bg-white text-yellow-600 px-3 py-1 rounded-full">Benar/Salah</span>
+                 </button>
+                 <button onclick="startLevel('sulit')" class="btn-candy w-full py-4 text-2xl flex items-center justify-between px-6">
+                     <span>🔴 Sulit</span> <span class="text-sm bg-white text-pink-600 px-3 py-1 rounded-full">Drag & Drop</span>
+                 </button>
+             </div>
+             <button onclick="showScreen('screen-menu')" class="mt-6 text-gray-500 underline font-bold">Kembali ke Menu</button>
+        </div>
+
+        <!-- ================= GAMEPLAY AREA ================= -->
+        <div id="screen-game" class="screen glass-panel p-4 md:p-6">
+            <!-- HUD -->
+            <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-2xl shadow-sm border-2 border-pink-100">
+                <div class="text-pink-500 font-bold flex gap-1 text-xl" id="lives-container">
+                    <!-- Lives injected here -->
+                </div>
+                <div class="candy-font text-2xl text-blue-600" id="score-display">0 <i class="fas fa-star text-yellow-400"></i></div>
+                <div class="font-bold text-xl flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full" id="timer-container">
+                    <i class="fas fa-clock"></i> <span id="time-display">120</span>
+                </div>
+            </div>
+
+            <!-- Power Ups -->
+            <div class="flex justify-center gap-3 mb-6">
+                <button id="pu-5050" onclick="usePowerUp('5050')" class="w-12 h-12 bg-pink-100 rounded-full border-2 border-pink-300 text-pink-500 text-xl hover:bg-pink-200 hover:scale-110 transition shadow-sm" title="Hapus 2 opsi salah">
+                    <i class="fas fa-eraser"></i>
+                </button>
+                <button id="pu-freeze" onclick="usePowerUp('freeze')" class="w-12 h-12 bg-blue-100 rounded-full border-2 border-blue-300 text-blue-500 text-xl hover:bg-blue-200 hover:scale-110 transition shadow-sm" title="Bekukan waktu 10s">
+                    <i class="fas fa-snowflake"></i>
+                </button>
+                <button id="pu-clue" onclick="usePowerUp('clue')" class="w-12 h-12 bg-yellow-100 rounded-full border-2 border-yellow-300 text-yellow-600 text-xl hover:bg-yellow-200 hover:scale-110 transition shadow-sm" title="Dapatkan petunjuk">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+
+            <!-- Question Container -->
+            <div class="bg-white rounded-2xl p-5 shadow-inner border-2 border-gray-100 mb-4 min-h-[200px]">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-bold text-gray-400 uppercase tracking-wide" id="question-number">Soal 1/5</span>
+                    <span class="text-xs font-bold text-white px-2 py-1 rounded-md" id="level-badge">Mudah</span>
+                </div>
+                
+                <h3 id="question-text" class="text-xl md:text-2xl font-bold text-gray-700 mb-6 text-center leading-relaxed">
+                    <!-- Question injected here -->
+                </h3>
+
+                <!-- Answer Area (Dynamic based on level) -->
+                <div id="answer-area" class="w-full">
+                    <!-- Options injected here -->
+                </div>
+            </div>
+            
+            <!-- Clue Box -->
+            <div id="clue-box" class="hidden bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 rounded-r text-yellow-700 text-sm animate-pop">
+                <i class="fas fa-lightbulb"></i> <b>Petunjuk:</b> <span id="clue-text"></span>
+            </div>
+        </div>
+
+        <!-- ================= FEEDBACK MODAL ================= -->
+        <div id="modal-feedback" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden backdrop-blur-sm px-4">
+            <div id="feedback-card" class="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl transform transition-all scale-95 opacity-0">
+                <div id="feedback-icon" class="text-6xl mb-4"></div>
+                <h2 id="feedback-title" class="text-3xl candy-font mb-2"></h2>
+                <p id="feedback-message" class="text-gray-600 mb-6 text-lg"></p>
+                <button onclick="nextQuestion()" id="btn-next" class="btn-candy w-full py-3 text-xl">Lanjut <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- ================= GAME OVER / RESULT ================= -->
+        <div id="screen-result" class="screen glass-panel p-6 md:p-8 text-center">
+            <h2 id="result-title" class="text-4xl candy-font mb-2"></h2>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-inner border-2 border-gray-100 my-6">
+                <div class="text-6xl mb-4" id="result-emoji">🏆</div>
+                <p class="text-gray-500 font-bold uppercase tracking-wide">Total Skor</p>
+                <div class="text-5xl candy-font text-pink-600 my-2" id="final-score">0</div>
+                
+                <div class="grid grid-cols-2 gap-4 mt-6 text-left text-sm bg-gray-50 p-4 rounded-xl">
+                    <div>
+                        <p class="text-gray-500">Skor Dasar:</p>
+                        <p class="font-bold text-gray-700 text-lg" id="base-score">0</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Bonus Waktu/Nyawa:</p>
+                        <p class="font-bold text-green-500 text-lg" id="bonus-score">+0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="showScreen('screen-level')" class="btn-candy btn-blue w-full py-3 text-xl">Main Lagi</button>
+                <button onclick="showScreen('screen-menu')" class="btn-candy w-full py-3 text-xl bg-gray-200 border-gray-300 text-gray-700 hover:text-white">Menu Utama</button>
+            </div>
+        </div>
+
+        <!-- ================= LEADERBOARD ================= -->
+        <div id="screen-leaderboard" class="screen glass-panel p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl text-green-600">Peringkat <i class="fas fa-trophy"></i></h2>
+                <button onclick="showScreen('screen-menu')" class="text-2xl text-gray-500 hover:text-green-600"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="bg-white rounded-xl p-4 shadow-inner border-2 border-green-100">
+                <table class="w-full text-left" id="lb-table">
+                    <thead>
+                        <tr class="text-gray-400 border-b-2">
+                            <th class="pb-2">#</th>
+                            <th class="pb-2">Nama</th>
+                            <th class="pb-2 text-right">Skor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lb-body" class="text-gray-700 font-bold">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+                <p id="lb-empty" class="text-center text-gray-400 py-4 hidden">Belum ada data. Jadilah yang pertama!</p>
+            </div>
+            <button onclick="showScreen('screen-menu')" class="btn-candy btn-green w-full py-3 mt-6 text-xl">Kembali</button>
+        </div>
+
+    </div>
+
+    <!-- Audio Elements -->
+    <script>
+        // Simple Audio Synthesizer to avoid external dependencies
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sounds = {
+            click: () => playTone(600, 'sine', 0.1),
+            correct: () => { playTone(523.25, 'triangle', 0.1); setTimeout(() => playTone(659.25, 'triangle', 0.2), 100); },
+            wrong: () => { playTone(300, 'sawtooth', 0.2); setTimeout(() => playTone(250, 'sawtooth', 0.3), 150); },
+            powerup: () => { playTone(800, 'sine', 0.1); setTimeout(() => playTone(1200, 'sine', 0.2), 100); },
+            gameover: () => { playTone(200, 'sawtooth', 0.5); },
+            win: () => { playTone(523.25, 'square', 0.1); setTimeout(() => playTone(659.25, 'square', 0.1), 100); setTimeout(() => playTone(783.99, 'square', 0.4), 200); }
+        };
+
+        // Attach click sound to all buttons
+        document.addEventListener('click', (e) => {
+            if(e.target.closest('button')) sounds.click();
+        });
+
+        // --- DATA ---
+        const materiData = {
+            penjumlahan: `
+                <h4 class="font-bold text-lg text-pink-500 mb-2">Penjumlahan (+)</h4>
+                <p class="mb-2">Penjumlahan artinya menggabungkan atau menambahkan jumlah benda. Simbolnya adalah <b>+</b>.</p>
+                <div class="bg-pink-50 p-3 rounded-xl mb-2">
+                    <p class="text-center text-xl">🍎🍎 + 🍎 = 🍎🍎🍎</p>
+                    <p class="text-center font-bold">2 + 1 = 3</p>
+                </div>
+                <p>Contoh: Jika kamu punya 3 permen, lalu diberi 2 permen lagi, permenmu menjadi 5.</p>
+            `,
+            pengurangan: `
+                <h4 class="font-bold text-lg text-green-500 mb-2">Pengurangan (-)</h4>
+                <p class="mb-2">Pengurangan artinya mengambil atau mengurangi jumlah benda. Simbolnya adalah <b>-</b>.</p>
+                <div class="bg-green-50 p-3 rounded-xl mb-2">
+                    <p class="text-center text-xl">🍪🍪🍪🍪 - 🍪 = 🍪🍪🍪</p>
+                    <p class="text-center font-bold">4 - 1 = 3</p>
+                </div>
+                <p>Contoh: Jika kamu punya 5 kue, lalu dimakan 2, kuemu sisa 3.</p>
+            `
+        };
+
+        const questionBank = {
+            mudah: [
+                { q: "Ada 3 burung di pohon. Datang lagi 2 burung. Berapa jumlah burung sekarang?", options: ["4", "5", "6", "3"], a: "5", clue: "Gunakan jarimu, hitung 3 lalu tambah 2.", feedback: "3 + 2 = 5 burung." },
+                { q: "Ibu membeli 5 apel. Dimakan adik 1 apel. Berapa sisa apel ibu?", options: ["3", "4", "5", "6"], a: "4", clue: "Dimakan berarti jumlahnya berkurang.", feedback: "5 - 1 = 4 apel." },
+                { q: "Berapakah hasil dari 4 + 4?", options: ["6", "7", "8", "9"], a: "8", clue: "Ini penjumlahan angka kembar, ayo hitung!", feedback: "4 ditambah 4 sama dengan 8." },
+                { q: "Andi punya 7 kelereng. Hilang 3 kelereng. Sisa kelereng Andi adalah...", options: ["3", "4", "5", "10"], a: "4", clue: "Hilang berarti dikurangi.", feedback: "7 dikurang 3 sama dengan 4." },
+                { q: "Berapakah hasil dari 9 - 5?", options: ["3", "4", "5", "2"], a: "4", clue: "Tunjukkan 9 jarimu, lalu tutup 5 jari.", feedback: "9 dikurang 5 sama dengan 4." }
+            ],
+            sedang: [
+                { q: "Hasil dari 3 + 6 adalah 9.", type: "tf", a: "Benar", clue: "Coba hitung lagi, 3 ditambah 6.", feedback: "Benar! 3 + 6 = 9." },
+                { q: "Jika 8 dikurangi 2, hasilnya adalah 5.", type: "tf", a: "Salah", clue: "Angkat 8 jari, tutup 2. Ada berapa jari yang masih terbuka?", feedback: "Salah! 8 - 2 seharusnya 6." },
+                { q: "4 + 5 sama besarnya dengan 5 + 4.", type: "tf", a: "Benar", clue: "Urutan dijumlahkan tidak mengubah hasil.", feedback: "Benar! Keduanya menghasilkan nilai 9." },
+                { q: "7 - 7 hasilnya adalah 1.", type: "tf", a: "Salah", clue: "Kalau kamu punya 7 permen dan dimakan semua, apa yang tersisa?", feedback: "Salah! 7 - 7 hasilnya 0." },
+                { q: "Hasil dari 10 - 3 adalah 7.", type: "tf", a: "Benar", clue: "Coba gunakan jarimu untuk memastikan.", feedback: "Benar sekali! 10 - 3 = 7." }
+            ],
+            sulit: [
+                { 
+                    q: "Urutkan operasi hitung berikut dari hasil TERKECIL ke TERBESAR!", 
+                    type: "drag", 
+                    items: ["4 - 2", "1 + 0", "2 + 2", "5 - 2"], 
+                    correctOrder: ["1 + 0", "4 - 2", "5 - 2", "2 + 2"],
+                    clue: "Hitung dulu masing-masing (1, 2, 3, 4).",
+                    feedback: "Urutannya: 1+0 (1), 4-2 (2), 5-2 (3), 2+2 (4)."
+                },
+                { 
+                    q: "Kelompokkan operasi hitung yang HASILNYA 5!", 
+                    type: "drag", 
+                    items: ["2 + 3", "8 - 2", "10 - 5", "4 + 2"], 
+                    correctOrder: ["2 + 3", "10 - 5"],
+                    exactMatch: false,
+                    clue: "Hanya pilih yang hasilnya tepat 5.",
+                    feedback: "2+3 dan 10-5 hasilnya adalah 5."
+                },
+                 { 
+                    q: "Urutkan operasi hitung berikut dari hasil TERBESAR ke TERKECIL!", 
+                    type: "drag", 
+                    items: ["5 + 4", "10 - 5", "8 - 1", "2 + 1"], 
+                    correctOrder: ["5 + 4", "8 - 1", "10 - 5", "2 + 1"],
+                    clue: "Hitung dulu: 9, 5, 7, 3. Lalu urutkan turun.",
+                    feedback: "Urutannya: 5+4 (9), 8-1 (7), 10-5 (5), 2+1 (3)."
+                }
+            ]
+        };
+
+        // --- GAME STATE ---
+        let playerName = "";
+        let currentLevel = "";
+        let currentQuestions = [];
+        let qIndex = 0;
+        let lives = 3;
+        let score = 0;
+        let timeLeft = 0;
+        let timerInterval;
+        let powerUps = { '5050': 1, 'freeze': 1, 'clue': 1 };
+        let isFrozen = false;
+
+        const POINTS = { mudah: 10, sedang: 20, sulit: 30 };
+        const TIME_LIMIT = { mudah: 120, sedang: 120, sulit: 150 };
+
+        // --- FUNCTIONS ---
+        
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startGame() {
+            const inputName = document.getElementById('player-name').value.trim();
+            if(!inputName) {
+                // Flash red logic instead of alert
+                const inp = document.getElementById('player-name');
+                inp.classList.add('animate-shake', 'border-red-400');
+                setTimeout(() => inp.classList.remove('animate-shake', 'border-red-400'), 500);
+                return;
+            }
+            playerName = inputName;
+            document.getElementById('greet-player').innerText = `Hai, ${playerName}! Siap belajar?`;
+            showScreen('screen-level');
+        }
+
+        function showMateri(topic) {
+            document.querySelectorAll('.materi-tab').forEach(t => {
+                t.classList.remove('bg-pink-100', 'text-pink-600');
+                t.classList.add('bg-gray-100', 'text-gray-600');
+            });
+            document.getElementById(`tab-${topic}`).classList.remove('bg-gray-100', 'text-gray-600');
+            document.getElementById(`tab-${topic}`).classList.add('bg-pink-100', 'text-pink-600');
+            
+            document.getElementById('materi-content').innerHTML = materiData[topic];
+        }
+
+        function startLevel(level) {
+            currentLevel = level;
+            // Copy and shuffle questions (take 3 for quick demo, or all)
+            currentQuestions = [...questionBank[level]].sort(() => Math.random() - 0.5).slice(0, 3);
+            qIndex = 0;
+            lives = 3;
+            score = 0;
+            timeLeft = TIME_LIMIT[level];
+            
+            // Reset PowerUps UI
+            powerUps = { '5050': 1, 'freeze': 1, 'clue': 1 };
+            document.querySelectorAll('[id^="pu-"]').forEach(btn => {
+                btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+                if(btn.id === 'pu-5050' && level !== 'mudah') {
+                    btn.style.opacity = '0.3'; btn.style.pointerEvents = 'none'; // 5050 only for MC
+                }
+            });
+
+            updateHUD();
+            showScreen('screen-game');
+            
+            const badge = document.getElementById('level-badge');
+            badge.innerText = level.toUpperCase();
+            badge.className = `text-xs font-bold text-white px-2 py-1 rounded-md ${level === 'mudah' ? 'bg-green-500' : level === 'sedang' ? 'bg-yellow-500' : 'bg-pink-500'}`;
+
+            loadQuestion();
+            startTimer();
+        }
+
+        function updateHUD() {
+            document.getElementById('score-display').innerHTML = `${score} <i class="fas fa-star text-yellow-400"></i>`;
+            
+            let livesHtml = '';
+            for(let i=0; i<3; i++) {
+                if(i < lives) livesHtml += '<i class="fas fa-heart text-red-500 animate-pop"></i> ';
+                else livesHtml += '<i class="far fa-heart text-gray-300"></i> ';
+            }
+            document.getElementById('lives-container').innerHTML = livesHtml;
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            isFrozen = false;
+            document.getElementById('time-display').innerText = timeLeft;
+            
+            timerInterval = setInterval(() => {
+                if(isFrozen) return;
+                
+                timeLeft--;
+                const timeDisp = document.getElementById('time-display');
+                timeDisp.innerText = timeLeft;
+                
+                if(timeLeft <= 10) timeDisp.parentElement.classList.add('timer-warning');
+                else timeDisp.parentElement.classList.remove('timer-warning');
+
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function loadQuestion() {
+            if(qIndex >= currentQuestions.length) {
+                endGame(true);
+                return;
+            }
+
+            const q = currentQuestions[qIndex];
+            document.getElementById('question-number').innerText = `Soal ${qIndex + 1}/${currentQuestions.length}`;
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('clue-box').classList.add('hidden');
+            
+            const area = document.getElementById('answer-area');
+            area.innerHTML = '';
+
+            if(currentLevel === 'mudah') {
+                // Multiple Choice
+                const opts = [...q.options].sort(() => Math.random() - 0.5);
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3';
+                opts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'mc-btn w-full py-4 px-6 bg-gray-50 border-2 border-gray-200 rounded-xl text-lg font-semibold text-gray-700 hover:bg-pink-50 hover:border-pink-300 transition text-left';
+                    btn.innerText = opt;
+                    btn.onclick = () => checkAnswer(opt, btn);
+                    grid.appendChild(btn);
+                });
+                area.appendChild(grid);
+
+            } else if (currentLevel === 'sedang') {
+                // True / False
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-2 gap-4';
+                ['Benar', 'Salah'].forEach(opt => {
+                    const btn = document.createElement('button');
+                    const color = opt === 'Benar' ? 'green' : 'red';
+                    btn.className = `w-full py-6 bg-${color}-50 border-2 border-${color}-300 rounded-xl text-2xl font-bold text-${color}-600 hover:bg-${color}-100 transition shadow-sm`;
+                    btn.innerHTML = opt === 'Benar' ? '<i class="fas fa-check-circle"></i> Benar' : '<i class="fas fa-times-circle"></i> Salah';
+                    btn.onclick = () => checkAnswer(opt, btn);
+                    grid.appendChild(btn);
+                });
+                area.appendChild(grid);
+
+            } else if (currentLevel === 'sulit') {
+                // Drag & Drop
+                const container = document.createElement('div');
+                
+                // Items to drag
+                const sourceDiv = document.createElement('div');
+                sourceDiv.className = 'flex flex-wrap gap-2 mb-6 min-h-[50px] p-2 bg-gray-50 rounded-xl';
+                sourceDiv.id = 'drag-source';
+                
+                const shuffledItems = [...q.items].sort(() => Math.random() - 0.5);
+                shuffledItems.forEach((item, idx) => {
+                    const el = document.createElement('div');
+                    el.className = 'draggable bg-white border-2 border-pink-400 px-4 py-2 rounded-lg font-bold text-pink-600 shadow-sm';
+                    el.draggable = true;
+                    el.id = 'item-' + idx;
+                    el.innerText = item;
+                    
+                    // Touch/Mouse events for Drag&Drop
+                    el.addEventListener('dragstart', dragStart);
+                    // Add simple touch support via basic click-to-select if drag API fails on mobile
+                    el.addEventListener('click', () => selectItemMobile(el)); 
+                    
+                    sourceDiv.appendChild(el);
+                });
+
+                // Dropzones based on exact match or grouping
+                const targetDiv = document.createElement('div');
+                if (q.exactMatch === false) {
+                     // Grouping
+                     targetDiv.className = 'dropzone bg-blue-50 border-4 border-dashed border-blue-300 rounded-xl min-h-[100px] p-4 flex flex-wrap gap-2 items-center justify-center relative';
+                     targetDiv.id = 'drop-target';
+                     targetDiv.innerHTML = '<span class="text-blue-300 font-bold absolute pointer-events-none">Tarik ke sini</span>';
+                     setupDropzone(targetDiv);
+                } else {
+                    // Ordering
+                    targetDiv.className = 'flex flex-col gap-2';
+                    targetDiv.id = 'drop-target-container';
+                    q.correctOrder.forEach((_, i) => {
+                        const dz = document.createElement('div');
+                        dz.className = 'dropzone bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl h-12 flex items-center justify-center relative w-full max-w-sm mx-auto';
+                        dz.dataset.index = i;
+                        setupDropzone(dz);
+                        targetDiv.appendChild(dz);
+                    });
+                }
+
+                const submitBtn = document.createElement('button');
+                submitBtn.className = 'btn-candy btn-blue w-full max-w-sm mx-auto block mt-6 py-3';
+                submitBtn.innerText = 'Cek Jawaban';
+                submitBtn.onclick = () => checkDragAnswer(q);
+
+                container.appendChild(sourceDiv);
+                container.appendChild(targetDiv);
+                container.appendChild(submitBtn);
+                area.appendChild(container);
+            }
+        }
+
+        let draggedItem = null;
+        let selectedMobileItem = null;
+
+        function dragStart(e) {
+            draggedItem = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            setTimeout(() => this.classList.add('opacity-50'), 0);
+        }
+
+        function setupDropzone(dz) {
+            dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+            dz.addEventListener('dragleave', e => { dz.classList.remove('dragover'); });
+            dz.addEventListener('drop', e => {
+                e.preventDefault();
+                dz.classList.remove('dragover');
+                if(draggedItem) {
+                    draggedItem.classList.remove('opacity-50');
+                    if(dz.id === 'drop-target') {
+                        // Grouping: append child
+                        dz.appendChild(draggedItem);
+                        dz.querySelector('span')?.remove(); // remove placeholder text
+                    } else {
+                        // Ordering: swap or place
+                        if(dz.children.length > 0) {
+                             document.getElementById('drag-source').appendChild(dz.children[0]);
+                        }
+                        dz.appendChild(draggedItem);
+                    }
+                }
+            });
+            dz.addEventListener('dragend', () => { if(draggedItem) draggedItem.classList.remove('opacity-50'); draggedItem = null; });
+            
+            // Mobile tap-to-drop
+            dz.addEventListener('click', () => {
+                if(selectedMobileItem) {
+                    if(dz.id === 'drop-target') {
+                        dz.appendChild(selectedMobileItem);
+                        dz.querySelector('span')?.remove();
+                    } else {
+                        if(dz.children.length > 0) document.getElementById('drag-source').appendChild(dz.children[0]);
+                        dz.appendChild(selectedMobileItem);
+                    }
+                    selectedMobileItem.classList.remove('ring-4', 'ring-blue-400');
+                    selectedMobileItem = null;
+                }
+            });
+        }
+
+        function selectItemMobile(el) {
+            if(selectedMobileItem) selectedMobileItem.classList.remove('ring-4', 'ring-blue-400');
+            if(selectedMobileItem === el) {
+                selectedMobileItem = null; // deselect
+            } else {
+                selectedMobileItem = el;
+                el.classList.add('ring-4', 'ring-blue-400');
+            }
+        }
+
+        function checkAnswer(selected, btnElement) {
+            const q = currentQuestions[qIndex];
+            const isCorrect = selected === q.a;
+            
+            // Visual feedback on button
+            if(btnElement) {
+                if(isCorrect) {
+                    btnElement.classList.replace('bg-gray-50', 'bg-green-500');
+                    btnElement.classList.replace('text-gray-700', 'text-white');
+                    if(btnElement.className.includes('bg-green-50')) btnElement.classList.replace('bg-green-50', 'bg-green-500');
+                } else {
+                    btnElement.classList.replace('bg-gray-50', 'bg-red-500');
+                    btnElement.classList.replace('text-gray-700', 'text-white');
+                    if(btnElement.className.includes('bg-red-50')) btnElement.classList.replace('bg-red-50', 'bg-red-500');
+                    btnElement.classList.add('animate-shake');
+                }
+            }
+
+            processResult(isCorrect, q);
+        }
+
+        function checkDragAnswer(q) {
+            let isCorrect = true;
+            if (q.exactMatch === false) {
+                // Grouping
+                const target = document.getElementById('drop-target');
+                const droppedTexts = Array.from(target.children).filter(c => c.classList.contains('draggable')).map(c => c.innerText);
+                // Check if all correct items are dropped and no incorrect ones
+                if(droppedTexts.length !== q.correctOrder.length) isCorrect = false;
+                else {
+                    q.correctOrder.forEach(item => { if(!droppedTexts.includes(item)) isCorrect = false; });
+                }
+            } else {
+                // Ordering or custom template
+                const container = document.getElementById('drop-target-container');
+                const zones = container.querySelectorAll('.dropzone');
+                
+                // Need to ensure all zones are filled
+                for(let i=0; i<zones.length; i++) {
+                    const item = zones[i].querySelector('.draggable');
+                    if(!item || item.innerText !== q.correctOrder[i]) {
+                        isCorrect = false;
+                        break;
+                    }
+                }
+            }
+            processResult(isCorrect, q);
+        }
+
+        function processResult(isCorrect, q) {
+            clearInterval(timerInterval); // Pause timer during feedback
+            
+            if (isCorrect) {
+                sounds.correct();
+                score += POINTS[currentLevel];
+                updateHUD();
+                showFeedback(true, "Hebat! 🎉", q.feedback);
+            } else {
+                sounds.wrong();
+                lives--;
+                updateHUD();
+                if (lives <= 0) {
+                    showFeedback(false, "Oh tidak! 😢", "Nyawamu habis. " + q.feedback, true);
+                } else {
+                    showFeedback(false, "Kurang Tepat 🤔", q.clue); // Show clue on wrong answer instead of full feedback
+                }
+            }
+        }
+
+        function showFeedback(isCorrect, title, message, isGameOver = false) {
+            const modal = document.getElementById('modal-feedback');
+            const card = document.getElementById('feedback-card');
+            const icon = document.getElementById('feedback-icon');
+            const titleEl = document.getElementById('feedback-title');
+            const btn = document.getElementById('btn-next');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            titleEl.innerText = title;
+            document.getElementById('feedback-message').innerHTML = message;
+
+            if (isCorrect) {
+                icon.innerHTML = '🌟';
+                titleEl.className = 'text-3xl candy-font mb-2 text-green-500';
+                btn.className = 'btn-candy btn-green w-full py-3 text-xl';
+                btn.onclick = () => { closeFeedback(); nextQuestion(); };
+            } else {
+                icon.innerHTML = '❌';
+                titleEl.className = 'text-3xl candy-font mb-2 text-red-500';
+                btn.className = 'btn-candy w-full py-3 text-xl';
+                if (isGameOver) {
+                    btn.innerText = "Lihat Hasil";
+                    btn.onclick = () => { closeFeedback(); endGame(false); };
+                } else {
+                    btn.innerText = "Coba Lagi / Lanjut";
+                    btn.onclick = () => { closeFeedback(); nextQuestion(); };
+                }
+            }
+        }
+
+        function closeFeedback() {
+            const modal = document.getElementById('modal-feedback');
+            const card = document.getElementById('feedback-card');
+            card.classList.remove('scale-100', 'opacity-100');
+            card.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        function nextQuestion() {
+            qIndex++;
+            loadQuestion();
+            if(qIndex < currentQuestions.length && lives > 0) {
+                startTimer(); // Resume timer
+            }
+        }
+
+        function usePowerUp(type) {
+            if(powerUps[type] <= 0) return;
+            powerUps[type]--;
+            const btn = document.getElementById(`pu-${type}`);
+            btn.style.opacity = '0.3';
+            btn.style.pointerEvents = 'none';
+            sounds.powerup();
+
+            const q = currentQuestions[qIndex];
+
+            if(type === '5050' && currentLevel === 'mudah') {
+                const btns = Array.from(document.querySelectorAll('.mc-btn'));
+                let removed = 0;
+                btns.forEach(b => {
+                    if(b.innerText !== q.a && removed < 2) {
+                        b.style.visibility = 'hidden';
+                        removed++;
+                    }
+                });
+            } else if (type === 'freeze') {
+                isFrozen = true;
+                const tc = document.getElementById('timer-container');
+                tc.classList.add('bg-blue-100', 'text-blue-500');
+                setTimeout(() => {
+                    isFrozen = false;
+                    tc.classList.remove('bg-blue-100', 'text-blue-500');
+                }, 10000);
+            } else if (type === 'clue') {
+                const cb = document.getElementById('clue-box');
+                document.getElementById('clue-text').innerText = q.clue;
+                cb.classList.remove('hidden');
+            }
+        }
+
+        function endGame(isWin) {
+            clearInterval(timerInterval);
+            document.getElementById('time-display').parentElement.classList.remove('timer-warning');
+            
+            showScreen('screen-result');
+            
+            let timeBonus = timeLeft > 0 && isWin ? Math.floor(timeLeft / 2) : 0;
+            let lifeBonus = isWin ? lives * 10 : 0;
+            let finalScore = score + timeBonus + lifeBonus;
+
+            document.getElementById('base-score').innerText = score;
+            document.getElementById('bonus-score').innerText = `+${timeBonus + lifeBonus}`;
+            
+            // Animation for score counting
+            let currScore = 0;
+            const scoreEl = document.getElementById('final-score');
+            const inc = Math.ceil(finalScore / 30) || 1;
+            const counter = setInterval(() => {
+                currScore += inc;
+                if(currScore >= finalScore) {
+                    currScore = finalScore;
+                    clearInterval(counter);
+                    // Save to leaderboard
+                    saveScore(playerName, finalScore, currentLevel);
+                }
+                scoreEl.innerText = currScore;
+            }, 30);
+
+            if(isWin) {
+                sounds.win();
+                document.getElementById('result-title').innerText = "Luar Biasa! 🎉";
+                document.getElementById('result-title').className = "text-4xl candy-font mb-2 text-green-500";
+                document.getElementById('result-emoji').innerText = "🏆";
+                startConfetti();
+            } else {
+                sounds.gameover();
+                document.getElementById('result-title').innerText = "Tetap Semangat! 💪";
+                document.getElementById('result-title').className = "text-4xl candy-font mb-2 text-blue-500";
+                document.getElementById('result-emoji').innerText = "💔";
+            }
+        }
+
+        // Leaderboard logic using LocalStorage
+        function saveScore(name, score, level) {
+            if(score <= 0) return;
+            let lb = JSON.parse(localStorage.getItem('candyQuestLB')) || [];
+            lb.push({ name, score, level, date: new Date().toLocaleDateString() });
+            lb.sort((a, b) => b.score - a.score);
+            lb = lb.slice(0, 10); // Keep top 10
+            localStorage.setItem('candyQuestLB', JSON.stringify(lb));
+        }
+
+        function showLeaderboard() {
+            const lb = JSON.parse(localStorage.getItem('candyQuestLB')) || [];
+            const tbody = document.getElementById('lb-body');
+            const empty = document.getElementById('lb-empty');
+            
+            tbody.innerHTML = '';
+            if(lb.length === 0) {
+                empty.classList.remove('hidden');
+                document.getElementById('lb-table').classList.add('hidden');
+            } else {
+                empty.classList.add('hidden');
+                document.getElementById('lb-table').classList.remove('hidden');
+                
+                lb.forEach((entry, i) => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-gray-100 last:border-0';
+                    let rankBadge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+                    tr.innerHTML = `
+                        <td class="py-3">${rankBadge}</td>
+                        <td class="py-3">${entry.name} <span class="text-xs font-normal text-gray-400 block">${entry.level}</span></td>
+                        <td class="py-3 text-right text-pink-500">${entry.score}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            showScreen('screen-leaderboard');
+        }
+
+        // Simple Confetti
+        function startConfetti() {
+            const colors = ['#FF6B6B', '#4facfe', '#43e97b', '#f6d365', '#a18cd1'];
+            for(let i=0; i<50; i++) {
+                const conf = document.createElement('div');
+                conf.style.position = 'fixed';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.top = -10 + 'px';
+                conf.style.width = Math.random() * 10 + 5 + 'px';
+                conf.style.height = Math.random() * 10 + 5 + 'px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                conf.style.zIndex = 9999;
+                conf.style.pointerEvents = 'none';
+                document.body.appendChild(conf);
+
+                const duration = Math.random() * 2 + 2;
+                conf.animate([
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                    { transform: `translateY(100vh) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+                ], { duration: duration * 1000, easing: 'linear' });
+
+                setTimeout(() => conf.remove(), duration * 1000);
+            }
+        }
+
+        // Initialize default materi tab
+        showMateri('penjumlahan');
+
+    </script>
+</body>
+</html>
